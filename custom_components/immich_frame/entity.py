@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 from urllib.parse import urlparse
 
-import async_timeout
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -59,7 +59,7 @@ class ImmichFrameEntity(Entity):
         session = async_get_clientsession(self.hass)
 
         try:
-            with async_timeout.timeout(COMMAND_TIMEOUT):
+            async with asyncio.timeout(COMMAND_TIMEOUT):
                 async with session.get(url) as response:
                     if response.status != 200:
                         raise HomeAssistantError(
