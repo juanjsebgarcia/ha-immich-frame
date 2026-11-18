@@ -6,6 +6,7 @@ from homeassistant.components.media_player import (
     MediaPlayerEntity,
     MediaPlayerEntityFeature,
     MediaPlayerState,
+    MediaType,
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -28,8 +29,9 @@ class ImmichFrameSlideshow(ImmichFrameEntity, MediaPlayerEntity):
     """
     The frame's slideshow, as a media player.
 
-    This gives play, pause, next and previous the standard media controls. The frame only
-    has a pause toggle, so play and pause are sent only when they would change something.
+    This gives play, pause, next and previous the standard media controls. Newer builds of
+    the app can be told to play or pause outright. Older ones only have a pause toggle, so
+    for those play and pause are sent only when they would change something.
     """
 
     _attr_supported_features = (
@@ -65,6 +67,42 @@ class ImmichFrameSlideshow(ImmichFrameEntity, MediaPlayerEntity):
         return paused if isinstance(paused, bool) else None
 
     @property
+    def _has_explicit_commands(self) -> bool:
+        """Return whether this frame can be told to play or pause outright."""
+        # The explicit commands arrived in the same build of the app as the media report.
+        # They do not apply in WebView mode, where the frame reports no paused flag.
+        status = self.status
+        return bool(status) and "media" in status and self._reported_paused is not None
+
+    @property
+    def _media(self) -> dict[str, object]:
+        status = self.status
+        media = status.get("media") if status else None
+        return media if isinstance(media, dict) else {}
+
+    @property
+    def media_content_type(self) -> MediaType | None:
+        kind = self._media.get("type")
+        if kind == "video":
+            return MediaType.VIDEO
+        if kind == "image":
+            return MediaType.IMAGE
+        return None
+
+    @property
+    def media_content_id(self) -> str | None:
+        # The frame can only identify videos; its server gives photos no identifier
+        content_id = self._media.get("id")
+        return content_id if isinstance(content_id, str) else None
+
+    @property
+    def media_title(self) -> str | None:
+        """Return the photo's location and date, as the frame itself shows them."""
+        parts = [self._media.get("location"), self._media.get("date")]
+        title = " - ".join(part for part in parts if isinstance(part, str) and part)
+        return title or None
+
+    @property
     def assumed_state(self) -> bool:
         return self._reported_paused is None
 
@@ -81,22 +119,34 @@ class ImmichFrameSlideshow(ImmichFrameEntity, MediaPlayerEntity):
             paused = self._assumed_paused
         return MediaPlayerState.PAUSED if paused else MediaPlayerState.PLAYING
 
-    async def _async_toggle_pause(self) -> None:
-        was_paused = self.state == MediaPlayerState.PAUSED
-        await self._async_send_command("pause")
-        self._assumed_paused = not was_paused
-        self._pending_paused = not was_paused
+    async def _async_set_paused(self, paused: bool) -> None:
+        state = self.state
+        if state == MediaPlayerState.OFF:
+            # A frame that is off must not have its slideshow started in the dark
+            return
+
+        if self._has_explicit_commands:
+            if paused:
+                await self._async_send_command("pause", "value=true")
+            else:
+                await self._async_send_command("play")
+        elif (state == MediaPlayerState.PAUSED) != paused:
+            # Only a toggle to work with, so send it only if it would change something
+            await self._async_send_command("pause")
+        else:
+            return
+
+        self._assumed_paused = paused
+        self._pending_paused = paused
         self.async_write_ha_state()
 
     async def async_media_play(self) -> None:
-        """Resume the slideshow, unless it is already running or the frame is off."""
-        if self.state == MediaPlayerState.PAUSED:
-            await self._async_toggle_pause()
+        """Resume the slideshow."""
+        await self._async_set_paused(False)
 
     async def async_media_pause(self) -> None:
-        """Pause the slideshow, unless it is already paused or the frame is off."""
-        if self.state == MediaPlayerState.PLAYING:
-            await self._async_toggle_pause()
+        """Pause the slideshow."""
+        await self._async_set_paused(True)
 
     async def async_media_next_track(self) -> None:
         """Show the next photo."""

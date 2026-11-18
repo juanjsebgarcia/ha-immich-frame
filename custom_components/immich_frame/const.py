@@ -20,6 +20,7 @@ BUTTON_COMMANDS = (
     ("pause", "Pause slideshow", False),
     ("settings", "Open settings", True),
 )
+RELOAD_COMMAND = "reload"
 STATUS_COMMAND = "status"
 
 # The frame answers a command before it has taken effect

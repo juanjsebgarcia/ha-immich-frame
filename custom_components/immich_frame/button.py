@@ -7,7 +7,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import BUTTON_COMMANDS, DOMAIN
+from homeassistant.const import EntityCategory
+
+from .const import BUTTON_COMMANDS, DOMAIN, RELOAD_COMMAND
 from .coordinator import ImmichFrameCoordinator
 from .entity import ImmichFrameEntity, get_coordinator
 
@@ -19,17 +21,27 @@ async def async_setup_entry(
 ) -> None:
     """Set up button entities for Immich Frame."""
     coordinator = get_coordinator(hass, config_entry)
-    async_add_entities(
-        ImmichFrameButton(
-            coordinator,
-            config_entry,
-            ButtonEntityDescription(
-                key=key,
-                name=name,
-                entity_registry_enabled_default=enabled,
-            ),
+    descriptions = [
+        ButtonEntityDescription(
+            key=key,
+            name=name,
+            entity_registry_enabled_default=enabled,
         )
         for key, name, enabled in BUTTON_COMMANDS
+    ]
+    # Reload arrived in the same build of the app as the media report
+    if coordinator.data and "media" in coordinator.data:
+        descriptions.append(
+            ButtonEntityDescription(
+                key=RELOAD_COMMAND,
+                name="Reload",
+                entity_category=EntityCategory.CONFIG,
+            )
+        )
+
+    async_add_entities(
+        ImmichFrameButton(coordinator, config_entry, description)
+        for description in descriptions
     )
 
 

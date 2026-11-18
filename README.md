@@ -20,6 +20,7 @@ This Home Assistant integration allows you to locally control an Immich Frame ap
 - **Display** (light): on, off and brightness. Its **System brightness** effect hands brightness back to the device's own setting; moving the slider takes it back.
 - **Slideshow** (media player): play, pause, next and previous, using the standard media controls.
 - **Open settings** (button): opens the app's settings screen on the frame.
+- **Reload** (button): makes the frame re-read its settings and reconnect to its server. Only on frames whose app supports it.
 
 The older **Next photo**, **Previous photo** and **Pause slideshow** buttons still exist, so existing automations keep working, but they are disabled by default on a new install in favour of the Slideshow entity.
 
@@ -30,6 +31,7 @@ Newer builds of the Android app expose a `/status` endpoint. When a frame has it
 - shows the display's real on/off state and brightness, rather than assuming them
 - marks the frame's entities as unavailable when it stops responding
 - shows whether the slideshow is playing or paused, rather than assuming it (native mode only; the app cannot see this in WebView mode)
+- shows the current photo's location and date on the Slideshow entity
 - adds **Screen on** and **Playing video** binary sensors
 - adds an **Uptime** diagnostic sensor, which drops back to zero when the app restarts
 
