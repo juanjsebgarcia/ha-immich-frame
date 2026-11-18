@@ -11,7 +11,14 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import COMMAND_TIMEOUT, CONF_HOST, COORDINATOR, DOMAIN, STATUS_REFRESH_DELAY
+from .const import (
+    ADJUSTMENTS_COMMAND,
+    COMMAND_TIMEOUT,
+    CONF_HOST,
+    COORDINATOR,
+    DOMAIN,
+    STATUS_REFRESH_DELAY,
+)
 from .coordinator import ImmichFrameCoordinator, build_base_url
 
 
@@ -81,6 +88,27 @@ class ImmichFrameEntity(CoordinatorEntity[ImmichFrameCoordinator]):
             await self.coordinator.async_request_refresh()
 
         self._cancel_refresh = async_call_later(self.hass, STATUS_REFRESH_DELAY, _refresh)
+
+    @property
+    def adjustments(self) -> dict[str, object]:
+        """Return the frame's image adjustments, or nothing if it does not report them."""
+        status = self.status
+        adjustments = status.get("adjustments") if status else None
+        return adjustments if isinstance(adjustments, dict) else {}
+
+    async def _async_set_adjustments(self, query: str, changes: dict[str, object]) -> None:
+        """
+        Send an adjustment to the frame and show it at once.
+
+        The frame applies it straight away, so the new value is shown without waiting for
+        the next status poll, which then confirms it.
+        """
+        await self._async_send_command(ADJUSTMENTS_COMMAND, query)
+        status = self.status
+        if status:
+            self.coordinator.async_set_updated_data(
+                {**status, "adjustments": {**self.adjustments, **changes}}
+            )
 
     def _build_url(self, path: str, query: str | None = None) -> str:
         base_url = build_base_url(self._host)

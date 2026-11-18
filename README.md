@@ -22,6 +22,8 @@ This Home Assistant integration allows you to locally control an Immich Frame ap
 - **Open settings** (button): opens the app's settings screen on the frame.
 - **Reload** (button): makes the frame re-read its settings and reconnect to its server. Only on frames whose app supports it.
 
+- **Image adjustments** (switch, sliders and a reset button, under Configuration): the frame's colour correction. Brightness, contrast, red, green and blue run from -50 to 50, gamma from 0.10 to 2.00. A change shows on the frame straight away, so a cold or dark panel can be tuned while looking at a photo instead of from behind the frame's own settings screen. Only on frames whose app supports it.
+
 The older **Next photo**, **Previous photo** and **Pause slideshow** buttons still exist, so existing automations keep working, but they are disabled by default on a new install in favour of the Slideshow entity.
 
 ## State Reporting

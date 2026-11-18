@@ -1,7 +1,7 @@
 from homeassistant.const import CONF_HOST
 
 DOMAIN = "immich_frame"
-PLATFORMS = ["binary_sensor", "button", "light", "media_player", "sensor"]
+PLATFORMS = ["binary_sensor", "button", "light", "media_player", "number", "sensor", "switch"]
 DEFAULT_PORT = 53287
 COMMAND_TIMEOUT = 10
 
@@ -20,6 +20,7 @@ BUTTON_COMMANDS = (
     ("pause", "Pause slideshow", False),
     ("settings", "Open settings", True),
 )
+ADJUSTMENTS_COMMAND = "adjustments"
 RELOAD_COMMAND = "reload"
 STATUS_COMMAND = "status"
 
