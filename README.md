@@ -12,6 +12,8 @@ This Home Assistant integration allows you to locally control an Immich Frame ap
 - Skip Picture
 - Pause
 - Previous Picture
+- Open the app's settings screen
+- Hand brightness back to the device's own setting
 
 ## State Reporting
 

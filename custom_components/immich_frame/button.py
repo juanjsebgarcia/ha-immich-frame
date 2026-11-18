@@ -20,14 +20,14 @@ async def async_setup_entry(
     """Set up button entities for Immich Frame."""
     coordinator = get_coordinator(hass, config_entry)
     async_add_entities(
-        ImmichFrameButton(coordinator, config_entry, description)
-        for description in _get_button_descriptions()
-    )
-
-
-def _get_button_descriptions() -> tuple[ButtonEntityDescription, ...]:
-    return tuple(
-        ButtonEntityDescription(key=key, name=name) for key, name in BUTTON_COMMANDS
+        ImmichFrameButton(
+            coordinator=coordinator,
+            config_entry=config_entry,
+            description=ButtonEntityDescription(key=key, name=name),
+            command=command,
+            query=query,
+        )
+        for key, name, command, query in BUTTON_COMMANDS
     )
 
 
@@ -41,6 +41,8 @@ class ImmichFrameButton(ImmichFrameEntity, ButtonEntity):
         coordinator: ImmichFrameCoordinator,
         config_entry: ConfigEntry,
         description: ButtonEntityDescription,
+        command: str,
+        query: str | None,
     ) -> None:
         super().__init__(
             coordinator=coordinator,
@@ -49,7 +51,9 @@ class ImmichFrameButton(ImmichFrameEntity, ButtonEntity):
             key=description.key,
         )
         self.entity_description = description
+        self._command = command
+        self._query = query
 
     async def async_press(self) -> None:
         """Send the configured command to the Immich Frame."""
-        await self._async_send_command(self.entity_description.key)
+        await self._async_send_command(self._command, self._query)

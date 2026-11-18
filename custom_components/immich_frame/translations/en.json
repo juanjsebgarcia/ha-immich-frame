@@ -25,6 +25,9 @@
             },
             "settings": {
                 "name": "Open settings"
+            },
+            "system_brightness": {
+                "name": "Use system brightness"
             }
         },
         "light": {
