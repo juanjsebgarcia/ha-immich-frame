@@ -11,15 +11,15 @@ BRIGHTNESS_COMMAND = "brightness"
 SYSTEM_BRIGHTNESS_QUERY = "value=-1"
 EFFECT_SYSTEM_BRIGHTNESS = "System brightness"
 
-# key, name, enabled by default.
-# The slideshow buttons are superseded by the media player entity. They stay for existing
-# installs and automations, but are no longer enabled on a new install.
+# key, name
 BUTTON_COMMANDS = (
-    ("next", "Next photo", False),
-    ("previous", "Previous photo", False),
-    ("pause", "Pause slideshow", False),
-    ("settings", "Open settings", True),
+    ("settings", "Open settings"),
 )
+
+# Buttons replaced by the Slideshow media player. Their registry entries are cleared out on
+# setup, so an upgraded install is not left with entities that no longer do anything.
+REMOVED_BUTTON_KEYS = ("next", "pause", "previous")
+
 ADJUSTMENTS_COMMAND = "adjustments"
 RELOAD_COMMAND = "reload"
 STATUS_COMMAND = "status"
