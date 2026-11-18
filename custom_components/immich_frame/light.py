@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from homeassistant.components.light import ATTR_BRIGHTNESS, ColorMode, LightEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import BRIGHTNESS_COMMAND, DOMAIN
-from .entity import ImmichFrameEntity
+from .coordinator import ImmichFrameCoordinator
+from .entity import ImmichFrameEntity, get_coordinator
 
 
 async def async_setup_entry(
@@ -17,7 +18,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Immich Frame light entity."""
-    async_add_entities([ImmichFrameLight(config_entry)])
+    async_add_entities([ImmichFrameLight(get_coordinator(hass, config_entry), config_entry)])
 
 
 class ImmichFrameLight(ImmichFrameEntity, LightEntity):
@@ -28,8 +29,35 @@ class ImmichFrameLight(ImmichFrameEntity, LightEntity):
     _attr_is_on = False
     _attr_brightness = 255
 
-    def __init__(self, config_entry: ConfigEntry) -> None:
-        super().__init__(config_entry, "Immich Frame Display", "light")
+    def __init__(self, coordinator: ImmichFrameCoordinator, config_entry: ConfigEntry) -> None:
+        super().__init__(
+            coordinator=coordinator,
+            config_entry=config_entry,
+            name="Immich Frame Display",
+            key="light",
+        )
+        self._apply_status()
+
+    def _apply_status(self) -> None:
+        """Take on and brightness from the frame's own report, when it gives one."""
+        status = self.status
+        if not status or "active" not in status:
+            return
+
+        self._attr_is_on = bool(status["active"])
+        brightness = status.get("brightness")
+        if not self._attr_is_on:
+            self._attr_brightness = 0
+        elif isinstance(brightness, (int, float)) and brightness >= 0:
+            self._attr_brightness = round(min(brightness, 1.0) * 255)
+        else:
+            # A negative value means the frame is following the system brightness
+            self._attr_brightness = 255
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        self._apply_status()
+        super()._handle_coordinator_update()
 
     async def async_turn_on(self, **kwargs) -> None:
         """Turn the frame display on or set brightness."""

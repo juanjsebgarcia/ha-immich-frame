@@ -8,7 +8,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import BUTTON_COMMANDS, DOMAIN
-from .entity import ImmichFrameEntity
+from .coordinator import ImmichFrameCoordinator
+from .entity import ImmichFrameEntity, get_coordinator
 
 
 async def async_setup_entry(
@@ -17,8 +18,9 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up button entities for Immich Frame."""
+    coordinator = get_coordinator(hass, config_entry)
     async_add_entities(
-        ImmichFrameButton(config_entry, description)
+        ImmichFrameButton(coordinator, config_entry, description)
         for description in _get_button_descriptions()
     )
 
@@ -34,8 +36,18 @@ class ImmichFrameButton(ImmichFrameEntity, ButtonEntity):
 
     entity_description: ButtonEntityDescription
 
-    def __init__(self, config_entry: ConfigEntry, description: ButtonEntityDescription) -> None:
-        super().__init__(config_entry, description.name, description.key)
+    def __init__(
+        self,
+        coordinator: ImmichFrameCoordinator,
+        config_entry: ConfigEntry,
+        description: ButtonEntityDescription,
+    ) -> None:
+        super().__init__(
+            coordinator=coordinator,
+            config_entry=config_entry,
+            name=description.name,
+            key=description.key,
+        )
         self.entity_description = description
 
     async def async_press(self) -> None:
