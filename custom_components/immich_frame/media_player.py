@@ -75,32 +75,42 @@ class ImmichFrameSlideshow(ImmichFrameEntity, MediaPlayerEntity):
         return bool(status) and "media" in status and self._reported_paused is not None
 
     @property
-    def _media(self) -> dict[str, object]:
+    def _media(self) -> list[dict[str, object]]:
+        """Return what is on screen: two photos when the frame has split its view."""
         status = self.status
         media = status.get("media") if status else None
-        return media if isinstance(media, dict) else {}
+        if not isinstance(media, list):
+            return []
+        return [item for item in media if isinstance(item, dict)]
 
     @property
     def media_content_type(self) -> MediaType | None:
-        kind = self._media.get("type")
-        if kind == "video":
-            return MediaType.VIDEO
-        if kind == "image":
-            return MediaType.IMAGE
-        return None
+        media = self._media
+        if not media:
+            return None
+        return MediaType.VIDEO if media[0].get("type") == "video" else MediaType.IMAGE
 
     @property
     def media_content_id(self) -> str | None:
-        # The frame can only identify videos; its server gives photos no identifier
-        content_id = self._media.get("id")
-        return content_id if isinstance(content_id, str) else None
+        """
+        Return an identifier that changes whenever the picture does.
+
+        A video gives its Immich asset id. A photo gives a fingerprint of its content,
+        since the frame's server does not tell it the photo's asset id.
+        """
+        ids = [item.get("id") or item.get("fingerprint") for item in self._media]
+        return ",".join(value for value in ids if isinstance(value, str)) or None
 
     @property
     def media_title(self) -> str | None:
-        """Return the photo's location and date, as the frame itself shows them."""
-        parts = [self._media.get("location"), self._media.get("date")]
-        title = " - ".join(part for part in parts if isinstance(part, str) and part)
-        return title or None
+        """Return each photo's location and date, as the frame itself shows them."""
+        titles = []
+        for item in self._media:
+            parts = [item.get("location"), item.get("date")]
+            title = " - ".join(part for part in parts if isinstance(part, str) and part)
+            if title:
+                titles.append(title)
+        return " | ".join(titles) or None
 
     @property
     def assumed_state(self) -> bool:
