@@ -21,13 +21,15 @@ async def async_setup_entry(
     coordinator = get_coordinator(hass, config_entry)
     async_add_entities(
         ImmichFrameButton(
-            coordinator=coordinator,
-            config_entry=config_entry,
-            description=ButtonEntityDescription(key=key, name=name),
-            command=command,
-            query=query,
+            coordinator,
+            config_entry,
+            ButtonEntityDescription(
+                key=key,
+                name=name,
+                entity_registry_enabled_default=enabled,
+            ),
         )
-        for key, name, command, query in BUTTON_COMMANDS
+        for key, name, enabled in BUTTON_COMMANDS
     )
 
 
@@ -41,8 +43,6 @@ class ImmichFrameButton(ImmichFrameEntity, ButtonEntity):
         coordinator: ImmichFrameCoordinator,
         config_entry: ConfigEntry,
         description: ButtonEntityDescription,
-        command: str,
-        query: str | None,
     ) -> None:
         super().__init__(
             coordinator=coordinator,
@@ -51,9 +51,7 @@ class ImmichFrameButton(ImmichFrameEntity, ButtonEntity):
             key=description.key,
         )
         self.entity_description = description
-        self._command = command
-        self._query = query
 
     async def async_press(self) -> None:
         """Send the configured command to the Immich Frame."""
-        await self._async_send_command(self._command, self._query)
+        await self._async_send_command(self.entity_description.key)

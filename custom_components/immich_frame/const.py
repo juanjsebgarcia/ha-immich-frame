@@ -1,20 +1,24 @@
 from homeassistant.const import CONF_HOST
 
 DOMAIN = "immich_frame"
-PLATFORMS = ["binary_sensor", "button", "light", "sensor"]
+PLATFORMS = ["binary_sensor", "button", "light", "media_player", "sensor"]
 DEFAULT_PORT = 53287
 COMMAND_TIMEOUT = 10
 
 BRIGHTNESS_COMMAND = "brightness"
 
-# key, name, command, query
+# A negative brightness hands the display back to the device's own setting
+SYSTEM_BRIGHTNESS_QUERY = "value=-1"
+EFFECT_SYSTEM_BRIGHTNESS = "System brightness"
+
+# key, name, enabled by default.
+# The slideshow buttons are superseded by the media player entity. They stay for existing
+# installs and automations, but are no longer enabled on a new install.
 BUTTON_COMMANDS = (
-    ("next", "Next photo", "next", None),
-    ("previous", "Previous photo", "previous", None),
-    ("pause", "Pause slideshow", "pause", None),
-    ("settings", "Open settings", "settings", None),
-    # A negative value hands brightness back to the device's own setting
-    ("system_brightness", "Use system brightness", BRIGHTNESS_COMMAND, "value=-1"),
+    ("next", "Next photo", False),
+    ("previous", "Previous photo", False),
+    ("pause", "Pause slideshow", False),
+    ("settings", "Open settings", True),
 )
 STATUS_COMMAND = "status"
 

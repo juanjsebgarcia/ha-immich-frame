@@ -2,12 +2,24 @@
 
 from __future__ import annotations
 
-from homeassistant.components.light import ATTR_BRIGHTNESS, ColorMode, LightEntity
+from homeassistant.components.light import (
+    ATTR_BRIGHTNESS,
+    ATTR_EFFECT,
+    EFFECT_OFF,
+    ColorMode,
+    LightEntity,
+    LightEntityFeature,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import BRIGHTNESS_COMMAND, DOMAIN
+from .const import (
+    BRIGHTNESS_COMMAND,
+    DOMAIN,
+    EFFECT_SYSTEM_BRIGHTNESS,
+    SYSTEM_BRIGHTNESS_QUERY,
+)
 from .coordinator import ImmichFrameCoordinator
 from .entity import ImmichFrameEntity, get_coordinator
 
@@ -28,6 +40,11 @@ class ImmichFrameLight(ImmichFrameEntity, LightEntity):
     _attr_color_mode = ColorMode.BRIGHTNESS
     _attr_is_on = False
     _attr_brightness = 255
+    # "System brightness" is offered as an effect so that it sits with the brightness
+    # slider: choosing it hands the display back to the device's own brightness setting
+    _attr_supported_features = LightEntityFeature.EFFECT
+    _attr_effect_list = [EFFECT_OFF, EFFECT_SYSTEM_BRIGHTNESS]
+    _attr_effect = EFFECT_OFF
 
     def __init__(self, coordinator: ImmichFrameCoordinator, config_entry: ConfigEntry) -> None:
         super().__init__(
@@ -50,9 +67,11 @@ class ImmichFrameLight(ImmichFrameEntity, LightEntity):
             self._attr_brightness = 0
         elif isinstance(brightness, (int, float)) and brightness >= 0:
             self._attr_brightness = round(min(brightness, 1.0) * 255)
+            self._attr_effect = EFFECT_OFF
         else:
             # A negative value means the frame is following the system brightness
             self._attr_brightness = 255
+            self._attr_effect = EFFECT_SYSTEM_BRIGHTNESS
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -62,6 +81,11 @@ class ImmichFrameLight(ImmichFrameEntity, LightEntity):
     async def async_turn_on(self, **kwargs) -> None:
         """Turn the frame display on or set brightness."""
         brightness = kwargs.get(ATTR_BRIGHTNESS)
+        effect = kwargs.get(ATTR_EFFECT)
+
+        if brightness is None and effect == EFFECT_OFF:
+            # Leaving system brightness needs a level to go to
+            brightness = self._attr_brightness or 255
 
         if brightness is not None:
             if not self.is_on:
@@ -69,6 +93,13 @@ class ImmichFrameLight(ImmichFrameEntity, LightEntity):
             value = brightness / 255.0
             await self._async_send_command(BRIGHTNESS_COMMAND, f"value={value:.2f}")
             self._attr_brightness = brightness
+            self._attr_effect = EFFECT_OFF
+        elif effect == EFFECT_SYSTEM_BRIGHTNESS:
+            if not self.is_on:
+                await self._async_send_command("undim")
+            await self._async_send_command(BRIGHTNESS_COMMAND, SYSTEM_BRIGHTNESS_QUERY)
+            self._attr_brightness = 255
+            self._attr_effect = EFFECT_SYSTEM_BRIGHTNESS
         else:
             await self._async_send_command("undim")
             self._attr_brightness = 255
