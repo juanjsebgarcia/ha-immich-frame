@@ -58,6 +58,6 @@ class ImmichFrameBinarySensor(ImmichFrameEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         status = self.status
-        if not status or self.entity_description.key not in status:
-            return None
-        return bool(status[self.entity_description.key])
+        value = status.get(self.entity_description.key) if status else None
+        # The frame reports null when it cannot tell, which is unknown rather than off
+        return value if isinstance(value, bool) else None
