@@ -22,7 +22,8 @@ This Home Assistant integration allows you to locally control an Immich Frame ap
 - **Open settings** (button): opens the app's settings screen on the frame.
 - **Reload** (button): makes the frame re-read its settings and reconnect to its server. Only on frames whose app supports it.
 
-The older **Next photo**, **Previous photo** and **Pause slideshow** buttons still exist, so existing automations keep working, but they are disabled by default on a new install in favour of the Slideshow entity.
+> [!WARNING]
+> **Breaking change:** the **Next photo**, **Previous photo** and **Pause slideshow** buttons have been removed in favour of the Slideshow entity. Automations that pressed them should call `media_player.media_next_track`, `media_player.media_previous_track` and `media_player.media_pause` or `media_player.media_play` on the Slideshow entity instead. The old button entities are removed automatically on upgrade.
 
 ## State Reporting
 

@@ -22,12 +22,8 @@ async def async_setup_entry(
     """Set up button entities for Immich Frame."""
     coordinator = get_coordinator(hass, config_entry)
     descriptions = [
-        ButtonEntityDescription(
-            key=key,
-            name=name,
-            entity_registry_enabled_default=enabled,
-        )
-        for key, name, enabled in BUTTON_COMMANDS
+        ButtonEntityDescription(key=key, name=name)
+        for key, name in BUTTON_COMMANDS
     ]
     # Reload arrived in the same build of the app as the media report
     if coordinator.data and "media" in coordinator.data:
